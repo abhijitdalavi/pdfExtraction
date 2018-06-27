@@ -88,7 +88,7 @@ def tessBox(box_lst):
             age = re.search('[0-9]+',res[len(res)-1]).group(0)
             #print(res[len(res)-1]) #This might be commented out
             intermediate = res[len(res)-1].split(" ")
-            gender = 'F' if re.match('म',intermediate[len(intermediate)-1])!= None else 'M' #3 for other states, 4 for UK.
+            gender = 'F' if re.match('म',intermediate[len(intermediate)-1])!= None else 'M' 
             #print(gender) ##
             opName = transliterate(name,sanscript.DEVANAGARI,sanscript.ITRANS)            
             rows.append([opName,age,gender])
