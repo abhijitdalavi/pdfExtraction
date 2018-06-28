@@ -3,7 +3,6 @@ import pytesseract as pt
 from PIL import Image
 from polyglot.text import Text
 import subprocess
-from polyglot.transliteration import Transliterator
 from indic_transliteration import sanscript
 from indic_transliteration.sanscript import transliterate
 from multiprocessing import Pool
@@ -72,9 +71,8 @@ def cropperBox(im,rangeTuple,dimX,dimY,inX,inY,addX,addY,rows,cols,saneY,saneSta
     #magick convert page.tiff[1] -crop 305x200+80+320 boxName1-0.tiff 
 def tessBox(box_lst):
     """
-    The output of cropperBox is a list of Image objects, of boxes.
+    The output of cropperBox is a list of Image objects, of boxes. TessBox will require such an input.
     """
-    tr = Transliterator(source_lang='hi',target_lang='en')#p
     rows = []
     indicesWithErrors = []
     for i,box in enumerate(box_lst):
