@@ -85,6 +85,8 @@ def tessList(name_lst):
             nameCorrect = nameCheck(name,'hin')
             if not nameCorrect:
                 raise Exception('Not hindi') 
+            if int(age) not in range(0,111):
+                raise Exception('Age incorrect')
             opname = transliterate(name,sanscript.DEVANAGARI,sanscript.ITRANS)            
             rows.append([opname,age,gender])
         except:
@@ -152,7 +154,9 @@ def tessBox(box_lst):#,pt,time,re,tranliterate,sanscript):
             nameCorrect = nameCheck(name,'hin')
             #print(gender) ##
             if not nameCorrect:
-                raise Exception('Not hindi')             
+                raise Exception('Not hindi')   
+            if int(age) not in range(0,111):
+                raise Exception('Age incorrect')
             opName = transliterate(name,sanscript.DEVANAGARI,sanscript.ITRANS) 
             rows.append([opName,age,gender])    
         except:
@@ -264,6 +268,7 @@ def mainProcess(pdfFile,rangeTuple,formatType,argv,n_blocks):
 x`	n_blocks: Number of blocks the box_lst must be divided. Basically number of concurrent processes.
 	argv: if format is "list"
                     [rows,inX,inY,dimX,dimY,saneY,saneStart,saneEnd]
+                       0   1   2   3     4    5       6        7
 					rows : Number of rows of boxes
 					inX: The x coordinate of the starting row
 					inY:The y-coordinate of the starting row
@@ -316,7 +321,12 @@ def doItAll(basePDFName,outputCSV,totalPDFs,formatType,argv,n_blocks):
 		writer = csv.writer(f)
 		writer.writerow(['Name','Age','Gender'])
 		writer.writerows(gen_names_lst)
-
+# Chandigarh: [10,3,577,215,94,340,746,296,263,94,770]
+# Uttarakhand: [10,3,550,200,80,370,780,286.5,305,50,300]
+# MP: [10,3,480,210,123,400,749,300,325,118,130]
+# HP: [48,690,365,1050,60.05,300,120,300]
+# Haryana:
+# UP: [10,3,455,210,90,320,770,300,245,75,300]
 		
 	
 ####################################################################################################################
