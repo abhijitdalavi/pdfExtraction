@@ -1,4 +1,40 @@
 #@numba.jit
+#Name modification:
+def modifyNameDF(df):
+    for i in range(0,len(df)):
+        name = df.loc[i]['Name']
+        newName = modifyName(name)
+        df.at[i,'Name'] = newName
+def modifyName(name):
+    name = name.split(" ") 
+    newName = ''
+    for namePart in name:
+        if not namePart=='':
+            namePart = removeEnda(namePart)
+            namePart = Itoee(namePart)
+            namePart = Mton(namePart)
+            #namePart = Utooo(namePart)
+            namePart = namePart.title()
+            newName+=namePart+' '   
+    return newName
+def removeEnda(part):
+    if(part[len(part)-1]=='a'):
+        return part[0:len(part)-1]
+    return part
+def Itoee(part):
+    if(len(part)>1):
+        return part[0]+part[1:].replace('I','ee')
+    else:
+        return part
+def Mton(part):
+    if 'M' in part:
+        return part[0]+part[1:].replace('M','n')
+    return part
+def Utooo(part):
+    return part[0]+part[1:].replace('U','oo')
+
+
+
 def nameStops(name):
     dots = findOccurrences(name,'.')
     dotNM = [True]*len(dots)
@@ -99,7 +135,10 @@ def dealWithDOT(name):
     dots = findOccurrences(name,'.')
     for i,val in enumerate(dotNM):
         if val:
-            name = name[:dots[i]]+name[dots[i]+1:]
+            if dots[i]+1<len(name):
+                name = name[:dots[i]]+name[dots[i]+1:]
+            else:
+                name = name[:dots[i]]
     return name
 #@numba.jit
 def findOccurrences(s, ch):# taken from: https://stackoverflow.com/a/13009866/5345646
@@ -138,7 +177,7 @@ def dealWithZWNJ(name):
 
 def nameMagic(df):
     names = np.copy(df['Name'].values)
-    delLst,col = nameMagicCol(names)
+    delLst,col,errorlst = nameMagicCol(names)
     dfNew = df.copy(deep=True)
     dfNew['Name'] = col
     #print(':::: '+str(len(dfNew)))
@@ -146,11 +185,10 @@ def nameMagic(df):
     dfNew = dfNew.drop(dfNew.index[delLst]) #Why is this not working?
     #print(':::: '+str(len(dfNew)))
     dfNew = dfNew.reset_index(drop=True)
-    return dfNew
+    return dfNew,errorlst
 # 42s no-numba   
 # numpy 1.54 s
 def tester(name):
-    
     name = dealWithDOT(name)
     name = dealWithZWJ(name)
     #print('Name after ZWJ:'+name)
@@ -164,24 +202,29 @@ def tester(name):
     return name 
 def nameMagicCol(col):
     delLst = []
+    errorLst = []
     for i in range(len(col)):
         name = col[i]
-        name = dealWithDOT(name)
-        name = dealWithZWJ(name)
-        #print('Name after ZWJ:'+name)
-        name = dealWithChandra(name)
-        name = dealWithNuqta(name)
-        name = dealWithZWNJ(name)
-        name = dealWithAnudatta(name)
-        name = dealWithTilde(name)
-        noSpaces = name.replace(' ','') 
-        noSpaces = noSpaces.replace('.','')
-        #print('noSpaces :'+noSpaces)
-        if not noSpaces.isalpha():
-            delLst.append(i)
-            print('removing '+str(i))
-        else:
-            col[i] = name   
-    return delLst,col           
+        try:
+            name = dealWithDOT(name)
+            name = dealWithZWJ(name)
+            #print('Name after ZWJ:'+name)
+            name = dealWithChandra(name)
+            name = dealWithNuqta(name)
+            name = dealWithZWNJ(name)
+            name = dealWithAnudatta(name)
+            name = dealWithTilde(name)
+            noSpaces = name.replace(' ','') 
+            noSpaces = noSpaces.replace('.','')
+            #print('noSpaces :'+noSpaces)
+            if not noSpaces.isalpha():
+                delLst.append(i)
+                print('removing '+str(i))
+            else:
+                col[i] = modifyName(name)
+        except:
+            errorLst.append(name)
+    return delLst,col,errorLst
+
 
     
