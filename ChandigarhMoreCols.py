@@ -1,9 +1,3 @@
-# Remove writing from doItAll and add to mainProcess
-# Have a list of tuples, with 33 pages. Run cropAndOCR multiple times
-# For each time cropAndOCR is run, write to the csv file.
-# Decide the number of pages per tuple by using rows (if formatType=='list') and rows*cols for boxes.
-# 
-###################################################################################
 import pytesseract as pt
 from PIL import Image
 #from polyglot.text import Text
@@ -20,7 +14,38 @@ from pathos.multiprocessing import ProcessingPool
 from PyPDF2 import PdfFileReader 
 
            
-                
+           
+def dealWithID(ID):
+    """
+    Returns the ID if it is of the correct format. Otherwise, if only a problem of 0s recognized as Os, then it corrects
+    them. Otherwise, return None.
+    """
+    newID = ID[:3]+ID[3:].replace('O','0')
+    #print(newID)
+    if not goodID(ID):
+        if goodID(newID):
+            return newID
+        elif(len(newID)==11 and newID[3]=='0' and newID[4]=='0'):
+            noOID = newID[:3]+newID[4:]
+            if goodID(noOID):
+                return noOID
+            else:
+                return '#####'+ID
+        else:
+            return '#####'+ID
+    return ID
+def goodID(ID):
+    l = len(ID) 
+    if(l!=10):
+        return False
+    else:
+        for c in range(3):
+            if not ID[c].isalpha():
+                return False
+        for c in range(3,10):
+            if not ID[c].isdigit():
+                return False
+    return True                
 def sane(im,rangeTuple,y,start,end):
     """
     The input is not a file on disk, but a file in memory that has already been opened by Image.open('path')
@@ -40,7 +65,6 @@ def sane(im,rangeTuple,y,start,end):
         if(acc):
             lst.append(pg)
     return lst
-#pagesWithErrors = doItAll('A0230005.pdf','pages',[(2,3)],"list",["name","age","gender"],'op2.csv',[45,460,62.44,520,410,80,62.44,1660,410,160,62.44,1480,410])
 def cropperList(im,rangeTuple,rows,inX,inY,dimX,dimY,saneY,saneStart,saneEnd):
     """
     im: The PIL Image object
@@ -67,8 +91,6 @@ def cropperList(im,rangeTuple,rows,inX,inY,dimX,dimY,saneY,saneStart,saneEnd):
             lst.append(crp1)
             count+=1
     return lst
-#120,312--350,312 
-#1050x62.44+690+472.44
 def tessList(name_lst):
     rows = []
     indicesWithErrors = []
@@ -99,7 +121,7 @@ def tessList(name_lst):
             print("Had errors.")
         print("Took time :"+str(tessEnd-tessStart))
     return rows,indicesWithErrors
-def getPartNumber(im,coord,pg):#This function belongs inside the cropperBox function
+def getPartNumber(im,coord,pg):
     im.seek(pg)
     crp = im.crop(coord)
     op =  pt.image_to_string(crp,lang='hin+eng',config='--psm 6')
@@ -129,11 +151,8 @@ def cropperBox(im,rangeTuple,dimX,dimY,inX,inY,addX,addY,rows,cols,saneY,saneSta
     lst = []
     for pg in sanePages:
         im.seek(pg)
-        # im = im.load()
+        
         part_number = getPartNumber(im,partCoord,pg)
-        #img = im.load() 
-        #Can do part cropping exactly here. A function, that takes in the page, and the coordinates of the part,
-        # and returns the part number of the part.
         count = 0 
         for i in range(rows):
             for j in range(cols):
@@ -143,29 +162,20 @@ def cropperBox(im,rangeTuple,dimX,dimY,inX,inY,addX,addY,rows,cols,saneY,saneSta
                 y2 = inY2+i*addY
                 crp1 = im.crop((x,y,dimX+x,dimY+y))
                 crp2 = im.crop((x2,y2,dimX2+x2,dimY2+y2))
-                
-                # crp1.save(str(pg)+str(count)+'.tiff')
-                # crp2.save(str(pg)+str(count)+'VID.tiff')
-                #crp2.load()
                 lst.append((crp1,crp2,pg,i*cols+j,part_number))
                 count = count + 1
-    return lst# pic of the form Box,pic of voter id,page number, box number, part number
-    #magick convert page.tiff[1] -crop 305x200+80+320 boxName1-0.tiff 
-    """husband_or_father_regional = res[1].split(":")[1].strip()
-house_number = res[2].split(":")[1]
-#intermediate = op.split("पति") if len(op.split("पति"))!=1 else op.split("पिता")
-has_husband = 1 if husband_or_father_regional=="पति" else 0"""
+    return lst
 def tessBox(box_lst):#,pt,time,re,tranliterate,sanscript):
     """
     The output of cropperBox is a list of Image objects, of boxes.
     """
-#    tr = Transliterator(source_lang='hi',target_lang='en')#p
     rows = []
     indicesWithErrors = []
     for i,box in enumerate(box_lst):
         boxStart = time.time()
         op = pt.image_to_string(box[0],lang='hin+eng',config='--psm 6')
-        voter_id = pt.image_to_string(box[1],lang='eng',config='--psm 6')
+        voter_id = pt.image_to_string(box[1],lang='eng',config='--psm 7')
+        voter_id = dealWithID(voter_id)
         # voter_id = ''
         boxTess = time.time()
         print("box number :"+str(i))
@@ -210,17 +220,14 @@ def tessBox(box_lst):#,pt,time,re,tranliterate,sanscript):
             elif(len(res[2].split("ः"))>1):
                 house_number = res[2].split("ः")[1].strip()
             if(re.match('[0-9/]+',house_number)==None):
-                house_number='' 
+                house_number='#####' 
             else:
                 house_number=re.match('[0-9/]+',house_number).group(0)
-            #WHAT ABOUT THAT.
             has_husband = 1 if (res[1].split("ः")[0] if len(res[0].split(":"))==1 else res[1].split(":")[0]).strip() == "पति" else 0
             age = re.search('[0-9]+',res[len(res)-1]).group(0)
-            #print(res[len(res)-1]) #This might be commented out
             intermediate = res[len(res)-1].split(" ")
             gender = 'F' if re.match('म',intermediate[len(intermediate)-1])!= None else 'M' #3 for other states, 4 for UK.
             nameCorrect = nameCheck(name_regional,'hin')
-                #print(gender) ##
             if not nameCorrect:
                 raise Exception('Not hindi')   
             if int(age) not in range(18,111):
@@ -259,7 +266,6 @@ def nameCheck(name,lang):
             return False
     return True  
 def cropAndOCR(im,rangeTuple,formatType,argv,n_blocks,argv2):
-    #Add more parameters for cropperBox' procedures
     """
     im: The PIL Image object 
     rangeTuple: A tuple describing the range of the pages to be processed. Example (4,7)
@@ -301,7 +307,6 @@ def cropAndOCR(im,rangeTuple,formatType,argv,n_blocks,argv2):
     if(formatType=='box'):
         st = time.time()
         box_lst = cropperBox(im,rangeTuple,argv[2],argv[3],argv[4],argv[5],argv[6],argv[7],argv[0],argv[1],argv[8],argv[9],argv[10],argv2[0],argv2[1],argv2[2],argv2[3],argv2[4])
-        #THis needs changing
         en = time.time()
         print("Time for cropping :"+str(en-st))
         names_lst = []
@@ -403,7 +408,7 @@ def mainProcess(pdfFile,rangeTuple,formatType,argv,n_blocks,outputCSV,writeBlock
     numberOfPages = int(writeBlockSize/entries_per_page) 
     div_lst = divider(rangeTuple[1]-rangeTuple[0],numberOfPages)
     print("div_lst :"+str(div_lst))
-    for tup in div_lst: #(0,rangeTuple[1]-rangeTuple[0])
+    for tup in div_lst:
         names_lst = cropAndOCR(im,(tup[0],tup[1]),formatType,argv,n_blocks,argv2)# Add the values of fpageInfo
         new_names_lst = [names_lst[i]+fpageInfo for i in range(len(names_lst))]
         with open(outputCSV,'a',newline='',encoding='UTF-8') as f:
@@ -439,13 +444,11 @@ def divider(upLimit,size):
 # Haryana:
 # UP: [10,3,455,210,90,320,770,300,245,75,300]
 if __name__=='__main__':
-    #names_lst = mainProcess('w0010001.pdf',(2,3),'box',[10,3,577,215,94,340,746,296,263,94,770],2)
-    #print(names_lst)
     #doItAll('w001000','op2.csv',2,'box',[10,3,577,215,94,340,746,296,263,94,770],2) ## for 2 pages: 3.5 minutes per page=3 minutes for OCR+0.5 minutes for page creation by ImageMagick 
     partCoord = (90,180,2330,250)
     firstPageCoords = [(1500,1663,2280,2320),(720,2440,1630,2580),(720,2600,1630,2770),(1250,3070,1480,3160),(1500,3070,1750,3160),(1770,3070,1980,3160),(2000,3060,2290,3160)]
     #mainProcess(pdfFile,rangeTuple,formatType,argv,n_blocks,outputCSV,writeBlockSize,firstPageCoords,argv2):
-    # mainProcess("w0010001.pdf",(0,3),'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,'final.csv',100,firstPageCoords,[partCoord,300,50,290,280])
-    doItAll('w001000','doitallop.csv',2,'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,100,firstPageCoords,[partCoord,300,50,290,280],)
+    mainProcess("w0010001.pdf",(0,3),'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,'final4.csv',100,firstPageCoords,[partCoord,300,50,290,280],0)
+    # doItAll('w001000','doitallop.csv',2,'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,100,firstPageCoords,[partCoord,300,50,290,280],)
     # doItAll('w001000','op2.csv',1,'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,1000,firstPageCoords,[partCoord,300,50,290,280]) ## for 2 pages: 3.5 minutes per page=3 minutes for OCR+0.5 minutes for page creation by ImageMagick 
    
