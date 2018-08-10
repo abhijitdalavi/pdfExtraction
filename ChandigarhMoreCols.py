@@ -13,7 +13,78 @@ import os
 from pathos.multiprocessing import ProcessingPool
 from PyPDF2 import PdfFileReader 
 
-           
+def dealWithHouses(house):
+    """
+    Checks if there is a "ling" part inside the name. If yes, then returns the part that is before it. Then
+    transliterates the result. Then converts to normal english.
+    """
+    house = house.split("लिंग")[0]
+    ophouse = transliterate(house,sanscript.DEVANAGARI,sanscript.ITRANS)            
+    for i in mapping:
+        ophouse = ophouse.replace(i[0],i[1])
+    ophouse  = saneHouse(ophouse.strip())
+    return ophouse
+def saneHouse(house):
+    allowed = ['\\','/',':','-',' ']
+    for c in house:
+        if(not (c.isalpha() or c.isdigit() or c in allowed)):
+            return '#####'+house
+    return house  
+mapping = [('bI.', 'B.'),
+ ('sI.', 'C.'),
+ ('DI.', 'D.'),
+ ('epha.', 'F.'),
+ ('jI.', 'G.'),
+ ('echa.', 'H.'),
+ ('ke.', 'K.'),
+ ('ela.', 'L.'),
+ ('ema.', 'M.'),
+ ('em.', 'M.'),
+ ('ena.', 'N.'),
+ ('o.', 'O.'),
+ ('pI.', 'P.'),
+ ('Ara.', 'R.'),
+ ('esa.', 'S.'),
+ ('TI.', 'T.'),
+ ('yU.', 'U.'),
+ ('vI.', 'V.'),
+ ('DablyU.', 'W.'),
+ ('eksa.', 'X.'),
+ ('vAI.', 'Y.'),
+ ('jeDa.', 'Z.'),
+ ('kyU.', 'Q.'),
+ ('je.', 'J.'),
+ ('AI.', 'I.'),
+ ('I.', 'E.'),
+ ('e.', 'A.'),
+ ('ai.', 'A'),
+ ('bI', 'B.'),
+ ('sI', 'C.'),
+ ('DI', 'D.'),
+ ('epha', 'F.'),
+ ('jI', 'G.'),
+ ('echa', 'H.'),
+ ('ke', 'K.'),
+ ('ela', 'L.'),
+ ('ema', 'M.'),
+ ('em', 'M.'),
+ ('ena', 'N.'),
+ ('o', 'O.'),
+ ('pI', 'P.'),
+ ('Ara', 'R.'),
+ ('esa', 'S.'),
+ ('TI', 'T.'),
+ ('yU', 'U.'),
+ ('vI', 'V.'),
+ ('DablyU', 'W.'),
+ ('eksa', 'X.'),
+ ('vAI', 'Y.'),
+ ('jeDa', 'Z.'),
+ ('kyU', 'Q.'),
+ ('je', 'J.'),
+ ('AI', 'I.'),
+ ('I', 'E.'),
+ ('e', 'A.')]           
            
 def dealWithID(ID):
     """
@@ -151,8 +222,10 @@ def cropperBox(im,rangeTuple,dimX,dimY,inX,inY,addX,addY,rows,cols,saneY,saneSta
     lst = []
     for pg in sanePages:
         im.seek(pg)
-        
+        s1 = time.time()
         part_number = getPartNumber(im,partCoord,pg)
+        s2 = time.time()
+        
         count = 0 
         for i in range(rows):
             for j in range(cols):
@@ -164,6 +237,8 @@ def cropperBox(im,rangeTuple,dimX,dimY,inX,inY,addX,addY,rows,cols,saneY,saneSta
                 crp2 = im.crop((x2,y2,dimX2+x2,dimY2+y2))
                 lst.append((crp1,crp2,pg,i*cols+j,part_number))
                 count = count + 1
+        s3 = time.time()
+        print("Took :"+str(s2-s1)+" to create the part+ "+str(s3-s2)+" to create all normal box&voterID") ;
     return lst
 def tessBox(box_lst):#,pt,time,re,tranliterate,sanscript):
     """
@@ -219,10 +294,9 @@ def tessBox(box_lst):#,pt,time,re,tranliterate,sanscript):
                 house_number = res[2].split(":")[1].strip()
             elif(len(res[2].split("ः"))>1):
                 house_number = res[2].split("ः")[1].strip()
-            if(re.match('[0-9/]+',house_number)==None):
-                house_number='#####' 
-            else:
-                house_number=re.match('[0-9/]+',house_number).group(0)
+            house_number = dealWithHouses(house_number)
+            
+                # house_number=re.match('[0-9/]+',house_number).group(0)
             has_husband = 1 if (res[1].split("ः")[0] if len(res[0].split(":"))==1 else res[1].split(":")[0]).strip() == "पति" else 0
             age = re.search('[0-9]+',res[len(res)-1]).group(0)
             intermediate = res[len(res)-1].split(" ")
@@ -314,8 +388,7 @@ def cropAndOCR(im,rangeTuple,formatType,argv,n_blocks,argv2):
         box_lst_divided = []
         for l in chunks(box_lst,int(len(box_lst)/n_blocks)):
             box_lst_divided.append(l)
-        pool = ProcessingPool() 
-	
+        pool = ProcessingPool()     
         results = pool.map(tessBox,box_lst_divided)
         for result in results:
             names_lst+=result[0] 
@@ -448,7 +521,7 @@ if __name__=='__main__':
     partCoord = (90,180,2330,250)
     firstPageCoords = [(1500,1663,2280,2320),(720,2440,1630,2580),(720,2600,1630,2770),(1250,3070,1480,3160),(1500,3070,1750,3160),(1770,3070,1980,3160),(2000,3060,2290,3160)]
     #mainProcess(pdfFile,rangeTuple,formatType,argv,n_blocks,outputCSV,writeBlockSize,firstPageCoords,argv2):
-    mainProcess("w0010001.pdf",(0,3),'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,'final4.csv',100,firstPageCoords,[partCoord,300,50,290,280],0)
-    # doItAll('w001000','doitallop.csv',2,'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,100,firstPageCoords,[partCoord,300,50,290,280],)
+    # mainProcess("w0010001.pdf",(0,3),'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,'checkHouses2.csv',100,firstPageCoords,[partCoord,300,50,290,280],0)
+    doItAll('w001000','doitallop4.csv',2,'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,100,firstPageCoords,[partCoord,300,50,290,280],)
     # doItAll('w001000','op2.csv',1,'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,1000,firstPageCoords,[partCoord,300,50,290,280]) ## for 2 pages: 3.5 minutes per page=3 minutes for OCR+0.5 minutes for page creation by ImageMagick 
    
