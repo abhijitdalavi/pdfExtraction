@@ -469,9 +469,6 @@ def mainProcess(pdfFile,rangeTuple,formatType,argv,n_blocks,outputCSV,writeBlock
     fpageInfo.append(pdfNumber) ;
     endPage = time.time()
     print('Time to create pages :'+str(endPage-startPage)) 
-    with open(outputCSV,'w',newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(['Name','Age','Gender','Husband_or_father_name','has_husband','house_number','voter_id','page_number','box_number','part_number','name_regional','husband_or_father_regional','main_town','police_station','pin_code','polling_station_name','polling_station_address','net_electors_male','net_electors_female','net_electors_third_gender','net_electors_total','main_town_hindi','police_station_hindi','polling_station_hindi','polling_station_address_hindi','pdf_number'])
     entries_per_page = 0 
     if(formatType=='box'):
         entries_per_page = argv[0]*argv[1]
@@ -489,6 +486,9 @@ def mainProcess(pdfFile,rangeTuple,formatType,argv,n_blocks,outputCSV,writeBlock
             writer.writerows(new_names_lst)
 def doItAll(basePDFName,outputCSV,totalPDFs,formatType,argv,n_blocks,writeBlockSize,firstPageCoords,argv2):
     totalNumberLength = len(str(totalPDFs))
+    with open(outputCSV,'w',newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Name','Age','Gender','Husband_or_father_name','has_husband','house_number','voter_id','page_number','box_number','part_number','name_regional','husband_or_father_regional','main_town','police_station','pin_code','polling_station_name','polling_station_address','net_electors_male','net_electors_female','net_electors_third_gender','net_electors_total','main_town_hindi','police_station_hindi','polling_station_hindi','polling_station_address_hindi','pdf_number'])
     for i in range(totalPDFs):
         zeros = totalNumberLength-len(str(i+1))
         pdfName = basePDFName+'0'*zeros+str(i+1)+'.pdf'
