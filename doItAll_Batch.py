@@ -234,8 +234,11 @@ def cropAndOCR(im,rangeTuple,formatType,argv,n_blocks):
         names_lst = []
         boxesWithErrors = []
         box_lst_divided = []
-        for l in chunks(box_lst,int(len(box_lst)/n_blocks)):
-            box_lst_divided.append(l)
+	if (len(box_lst)<n_blocks):
+		box_lst_divided.append(box_lst)
+	else:
+        	for l in chunks(box_lst,int(len(box_lst)/n_blocks)):
+            		box_lst_divided.append(l)
         pool = ProcessingPool() 
 	
         results = pool.map(tessBox,box_lst_divided)
