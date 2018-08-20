@@ -462,7 +462,8 @@ def extractFirstPage(im,coords):
    
 def mainProcess(pdfFile,rangeTuple,formatType,argv,n_blocks,outputCSV,writeBlockSize,firstPageCoords,argv2,pdfNumber):
     startPage = time.time()
-    cmd = 'convert -density 300 '+pdfFile+'['+str(rangeTuple[0])+'-'+str(rangeTuple[1])+'] -depth 8 '+'temp.tiff' #Linux
+    cmd = 'convert -density 300 '+pdfFile+'['+str(rangeTuple[0])+'-'+str(rangeTuple[1])+'] -depth 8 '+'temp.tiff' #WINDOWS
+    # cmd = 'magick convert -density 300 '+pdfFile+'['+str(rangeTuple[0])+'-'+str(rangeTuple[1])+'] -depth 8 '+'temp.tiff' #WINDOWS
     if(os.path.isfile('temp.tiff')):
         os.remove('temp.tiff')
     subprocess.call(cmd,shell=True)
@@ -487,12 +488,12 @@ def mainProcess(pdfFile,rangeTuple,formatType,argv,n_blocks,outputCSV,writeBlock
         with open(outputCSV,'a',newline='',encoding='UTF-8') as f:
             writer = csv.writer(f)
             writer.writerows(new_names_lst)
-def doItAll(basePDFName,outputCSV,totalPDFs,formatType,argv,n_blocks,writeBlockSize,firstPageCoords,argv2):
+def doItAll(basePDFName,outputCSV,startPDF,totalPDFs,formatType,argv,n_blocks,writeBlockSize,firstPageCoords,argv2):
     totalNumberLength = len(str(totalPDFs))
     with open(outputCSV,'w',newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['Name','Age','Gender','Husband_or_father_name','has_husband','house_number','voter_id','page_number','box_number','part_number','name_regional','husband_or_father_regional','main_town','police_station','pin_code','polling_station_name','polling_station_address','net_electors_male','net_electors_female','net_electors_third_gender','net_electors_total','main_town_hindi','police_station_hindi','polling_station_hindi','polling_station_address_hindi','pdf_number'])
-    for i in range(totalPDFs):
+    for i in range(startPDF-1,totalPDFs):
         zeros = totalNumberLength-len(str(i+1))
         pdfName = basePDFName+'0'*zeros+str(i+1)+'.pdf'
         noOfPages = PdfFileReader(open(pdfName,'rb')).getNumPages()
@@ -525,6 +526,6 @@ if __name__=='__main__':
     firstPageCoords = [(1500,1663,2280,2320),(720,2440,1630,2580),(720,2600,1630,2770),(1250,3070,1480,3160),(1500,3070,1750,3160),(1770,3070,1980,3160),(2000,3060,2290,3160)]
     #mainProcess(pdfFile,rangeTuple,formatType,argv,n_blocks,outputCSV,writeBlockSize,firstPageCoords,argv2):
     # mainProcess("w0010001.pdf",(0,3),'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,'checkHouses2.csv',100,firstPageCoords,[partCoord,300,50,290,280],0)
-    doItAll('w001000','doitallop4.csv',2,'box',[10,3,577,215,94,332,750,297.5,263,94,770],2,100,firstPageCoords,[partCoord,300,50,290,280])
+    doItAll('w0010','chan2.csv',230,527,'box',[10,3,577,215,94,332,750,297.5,263,94,770],2,1000,firstPageCoords,[partCoord,300,50,290,280])
     # doItAll('w001000','op2.csv',1,'box',[10,3,577,215,94,332,750,297.5,263,94,770],4,1000,firstPageCoords,[partCoord,300,50,290,280]) ## for 2 pages: 3.5 minutes per page=3 minutes for OCR+0.5 minutes for page creation by ImageMagick 
    
